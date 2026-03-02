@@ -1,5 +1,13 @@
 /** @type {import("next").NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "files.manuscdn.com",
+      },
+    ],
+  },
   // Disable React running twice as it messes up with iframes
   reactStrictMode: false,
   typedRoutes: true,

@@ -12,6 +12,20 @@ import { isManifestRouteEnabled } from "./ManifestRouteEnabled";
 
 const books = [
   {
+    title: "Alice's Adventures in Wonderland",
+    author: "Lewis Carroll",
+    cover: "/images/ReadiumLogo.png",
+    url: "/read/alice-in-wonderland",
+    rendition: "Reflowable"
+  },
+  {
+    title: "Frankenstein",
+    author: "Mary Shelley",
+    cover: "/images/ReadiumLogo.png",
+    url: "/read/frankenstein",
+    rendition: "Reflowable"
+  },
+  {
     title: "Moby Dick",
     author: "Herman Melville",
     cover: "/images/MobyDick.jpg",
@@ -38,6 +52,13 @@ const books = [
     cover: "/images/Bella.jpg",
     url: "/read/bella-the-dragon",
     rendition: "Fixed Layout"
+  },
+  {
+    title: "Doesn\u2019t Religion Cause War & Terror?",
+    author: "Krish Kandiah",
+    cover: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663145033209/zQlAMTAimeNzdWkz.jpg",
+    url: "/read/religions-war-terror",
+    rendition: "Reflowable"
   }
 ];
 
