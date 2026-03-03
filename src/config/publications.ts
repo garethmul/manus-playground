@@ -1,9 +1,24 @@
+// Publication manifest URLs for the Readium Playground library.
+// Books hosted on the self-hosted Railway publication server (manus-wcp-production.up.railway.app)
+// are served from EPUBs stored in the server/epubs/ directory of garethmul/manus-wcp.
+// To add a new book: add the EPUB to server/epubs/, commit and push to trigger a Railway redeploy,
+// then add the entry here using the base64url-encoded filename as the path segment.
+//
+// Base64url encoding: echo -n "filename.epub" | base64 | tr '+/' '-_' | tr -d '='
+//
+// Self-hosted server: https://manus-wcp-production.up.railway.app
+// GitHub repo: https://github.com/garethmul/manus-wcp
+
+const RAILWAY_SERVER = "https://manus-wcp-production.up.railway.app";
+
 export const PUBLICATION_MANIFESTS = {
-  "alice-in-wonderland": "https://publication-server.readium.org/webpub/aHR0cHM6Ly93d3cuZ3V0ZW5iZXJnLm9yZy9lYm9va3MvMTEuZXB1Yi5pbWFnZXM/manifest.json",
-  "frankenstein": "https://publication-server.readium.org/webpub/aHR0cHM6Ly93d3cuZ3V0ZW5iZXJnLm9yZy9lYm9va3MvODQuZXB1Yi5pbWFnZXM/manifest.json",
-  "moby-dick": "https://publication-server.readium.org/webpub/Z3M6Ly9yZWFkaXVtLXBsYXlncm91bmQtZmlsZXMvZGVtby9tb2J5LWRpY2suZXB1Yg/manifest.json",
-  "the-house-of-seven-gables": "https://publication-server.readium.org/webpub/Z3M6Ly9yZWFkaXVtLXBsYXlncm91bmQtZmlsZXMvZGVtby9uYXRoYW5pZWwtaGF3dGhvcm5lX3RoZS1ob3VzZS1vZi10aGUtc2V2ZW4tZ2FibGVzX2FkdmFuY2VkLmVwdWI/manifest.json",
-  "les-diaboliques": "https://publication-server.readium.org/webpub/Z3M6Ly9yZWFkaXVtLXBsYXlncm91bmQtZmlsZXMvZGVtby9sZXNfZGlhYm9saXF1ZXMuZXB1Yg/manifest.json",
+  // Self-hosted on Railway (garethmul/manus-wcp → server/epubs/)
+  "alice-in-wonderland": `${RAILWAY_SERVER}/webpub/YWxpY2UuZXB1Yg/manifest.json`,
+  "frankenstein": `${RAILWAY_SERVER}/webpub/ZnJhbmtlbnN0ZWluLmVwdWI/manifest.json`,
+  "moby-dick": `${RAILWAY_SERVER}/webpub/bW9ieS1kaWNrLmVwdWI/manifest.json`,
+  "the-house-of-seven-gables": `${RAILWAY_SERVER}/webpub/aG91c2Utb2Ytc2V2ZW4tZ2FibGVzLmVwdWI/manifest.json`,
+  "les-diaboliques": `${RAILWAY_SERVER}/webpub/bGVzLWRpYWJvbGlxdWVzLmVwdWI/manifest.json`,
+  "religions-war-terror": `${RAILWAY_SERVER}/webpub/UmVsaWdpb25zLXdhci10ZXJyb3IuZXB1Yg/manifest.json`,
+  // Hosted on official Readium server (proprietary EPUB, not self-hosted)
   "bella-the-dragon": "https://publication-server.readium.org/webpub/Z3M6Ly9yZWFkaXVtLXBsYXlncm91bmQtZmlsZXMvZGVtby9CZWxsYU9yaWdpbmFsMy5lcHVi/manifest.json",
-  "religions-war-terror": "https://publication-server.readium.org/webpub/aHR0cHM6Ly9maWxlcy5tYW51c2Nkbi5jb20vdXNlcl91cGxvYWRfYnlfbW9kdWxlL3Nlc3Npb25fZmlsZS8zMTA1MTk2NjMxNDUwMzMyMDkvb2d0SU1mbHlJbGZ6RUdoWi5lcHVi/manifest.json"
 } as const;
