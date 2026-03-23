@@ -87,9 +87,23 @@ interface ToastState {
 }
 
 // ─── Note decoration group name ───────────────────────────────────────────────
-// Notes use a single decoration group (no per-colour groups needed since the
-// underline colour is set via injected CSS, not via the tint property).
 const NOTE_GROUP_PREFIX = "wcp-notes";
+
+// ─── Note tint colours ────────────────────────────────────────────────────────
+// We use slightly different hex values for note tints vs highlight tints so the
+// MutationObserver can distinguish which readium-decoration-N groups are notes.
+// These are the canonical underline colours shown to the user.
+const NOTE_TINT_COLORS: Record<HighlightColor, string> = {
+  yellow: "#FFC107",
+  green:  "#4CAF50",
+  blue:   "#2196F3",
+  red:    "#F44336",
+  purple: "#9C27B0",
+  orange: "#FF9800",
+};
+
+// Build a reverse-lookup: tint hex → underline colour (same value, just for clarity)
+const NOTE_TINT_SET = new Set(Object.values(NOTE_TINT_COLORS).map(c => c.toLowerCase()));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -151,42 +165,77 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   // ── Dismiss selection when clicking outside the toolbar ─────────────────
   const dismissSelection = useCallback(() => setSelection(null), []);
 
-  // ── Inject CSS into an iframe to make note groups render as underlines ───
-  // The navigator injects ::highlight(groupId) { background-color: tint }
-  // We override this with text-decoration: underline for note groups.
+  // ── Inject a MutationObserver into an iframe to patch note decoration CSS ──
+  // The Readium navigator maps our group name (e.g. "wcp-notes-blue") to an
+  // internal sequential ID (e.g. "readium-decoration-8") and injects a <style>
+  // element with CSS like:
+  //   ::highlight(readium-decoration-8) { background-color: #2196F3 }
+  // We can't predict the internal ID, so we use a MutationObserver to watch for
+  // new style[data-readium] elements.  When one appears, if its background-color
+  // matches one of our NOTE_TINT_COLORS we replace the CSS with underline styling.
   const injectNoteStyles = useCallback((iframe: HTMLIFrameElement) => {
     try {
       const iframeDoc = iframe.contentDocument;
       if (!iframeDoc) return;
 
-      const existingStyle = iframeDoc.getElementById("wcp-note-underline-styles");
-      if (existingStyle) return; // already injected
+      // Avoid double-injecting the observer
+      if (iframeDoc.getElementById("wcp-note-observer-marker")) return;
+      const marker = iframeDoc.createElement("meta");
+      marker.id = "wcp-note-observer-marker";
+      iframeDoc.head.appendChild(marker);
 
-      const style = iframeDoc.createElement("style");
-      style.id = "wcp-note-underline-styles";
-      // We use a wildcard selector that matches all note group highlight names.
-      // The navigator names groups readium-decoration-N where N is a sequential int.
-      // We can't predict the group ID, so instead we inject CSS for every possible
-      // note group name (wcp-notes-yellow, wcp-notes-green, etc.) and also add a
-      // MutationObserver approach below.
-      //
-      // The CSS Custom Highlights API supports text-decoration on ::highlight().
-      // We override background-color to transparent and add underline.
-      const noteColors = Object.keys(HIGHLIGHT_COLORS) as HighlightColor[];
-      const rules = noteColors.map((colorKey) => {
-        const tint = HIGHLIGHT_COLORS[colorKey];
-        return `::highlight(wcp-notes-${colorKey}) {
-          background-color: transparent !important;
-          color: inherit !important;
-          text-decoration: underline !important;
-          text-decoration-color: ${tint} !important;
-          text-decoration-thickness: 2px !important;
-          text-underline-offset: 3px !important;
-        }`;
-      }).join("\n");
+      const patchStyleIfNote = (styleEl: HTMLStyleElement) => {
+        const css = styleEl.textContent ?? "";
+        // Extract the background-color value from the navigator's injected CSS
+        const bgMatch = css.match(/background-color:\s*([^;]+);/);
+        if (!bgMatch) return;
+        const bgColor = bgMatch[1].trim().toLowerCase();
+        if (!NOTE_TINT_SET.has(bgColor)) return;
 
-      style.textContent = rules;
-      iframeDoc.head.appendChild(style);
+        // This is a note group — replace background with underline
+        const groupMatch = css.match(/::highlight\(([^)]+)\)/);
+        if (!groupMatch) return;
+        const groupName = groupMatch[1];
+
+        styleEl.textContent = `
+          ::highlight(${groupName}) {
+            background-color: transparent !important;
+            color: inherit !important;
+            text-decoration: underline !important;
+            text-decoration-color: ${bgColor} !important;
+            text-decoration-thickness: 2px !important;
+            text-underline-offset: 3px !important;
+          }
+        `;
+      };
+
+      // Patch any existing readium decoration styles (in case they were added before we ran)
+      iframeDoc.querySelectorAll<HTMLStyleElement>("style[data-readium]").forEach(patchStyleIfNote);
+
+      // Watch for new ones
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (
+              node.nodeType === Node.ELEMENT_NODE &&
+              (node as Element).tagName.toUpperCase() === "STYLE" &&
+              (node as HTMLStyleElement).dataset?.readium === "true"
+            ) {
+              patchStyleIfNote(node as HTMLStyleElement);
+            }
+          }
+          // Also handle text content changes on existing style elements
+          if (
+            mutation.type === "characterData" &&
+            mutation.target.parentElement?.tagName.toUpperCase() === "STYLE" &&
+            (mutation.target.parentElement as HTMLStyleElement).dataset?.readium === "true"
+          ) {
+            patchStyleIfNote(mutation.target.parentElement as HTMLStyleElement);
+          }
+        }
+      });
+
+      observer.observe(iframeDoc.head, { childList: true, subtree: true, characterData: true });
     } catch {
       // ignore
     }
@@ -246,29 +295,40 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
             const caretRange = iframeDoc.caretRangeFromPoint?.(clientX, clientY);
             if (!caretRange) return;
 
-            // Check all note CSS Highlight ranges to see if the caret is inside one
+            // Check all note CSS Highlight ranges to see if the caret is inside one.
+            // The navigator maps our group names to internal readium-decoration-N IDs,
+            // so we iterate ALL CSS highlight groups and match by range text content.
             const currentNotes = notesRef.current;
+            // Build a quick lookup: highlight text → note (for notes on this page)
+            const noteByText = new Map<string, typeof currentNotes[0]>();
             for (const note of currentNotes) {
               if (note.type !== "note") continue;
-              const colorKey = note.color ?? "yellow";
-              const groupName = `wcp-notes-${colorKey}`;
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const highlightGroup = (iframeWin as any).CSS?.highlights?.get(groupName);
-              if (!highlightGroup) continue;
+              const txt = note.locator?.text?.highlight;
+              if (txt) noteByText.set(txt, note);
+            }
+            if (noteByText.size === 0) return;
 
-              // Iterate over ranges in this highlight group
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const highlights = (iframeWin as any).CSS?.highlights;
+            if (!highlights) return;
+
+            for (const [, highlightGroup] of highlights) {
               for (const range of highlightGroup) {
                 try {
                   // Check if the caret position is within this range
                   const startCmp = caretRange.compareBoundaryPoints(Range.START_TO_START, range);
                   const endCmp = caretRange.compareBoundaryPoints(Range.END_TO_END, range);
                   if (startCmp >= 0 && endCmp <= 0) {
-                    // Click is inside this note's range
-                    const iframeRect = iframe.getBoundingClientRect();
-                    const absX = iframeRect.left + clientX;
-                    const absY = iframeRect.top + clientY;
-                    setNotePopover({ note, anchorX: absX, anchorY: absY });
-                    return;
+                    // Click is inside this range — check if it's a note
+                    const rangeText = range.toString();
+                    const matchedNote = noteByText.get(rangeText);
+                    if (matchedNote) {
+                      const iframeRect = iframe.getBoundingClientRect();
+                      const absX = iframeRect.left + clientX;
+                      const absY = iframeRect.top + clientY;
+                      setNotePopover({ note: matchedNote, anchorX: absX, anchorY: absY });
+                      return;
+                    }
                   }
                 } catch {
                   // Range comparison may throw if ranges are in different documents
@@ -381,9 +441,9 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         }
       }
 
-      // Add notes (underline — tint is used as underline colour via injected CSS)
+      // Add notes (underline — NOTE_TINT_COLORS used so MutationObserver can identify them)
       for (const [colorKey, annotations] of Object.entries(notesByColor)) {
-        const tint = HIGHLIGHT_COLORS[colorKey as HighlightColor] ?? "#FFE066";
+        const tint = NOTE_TINT_COLORS[colorKey as HighlightColor] ?? NOTE_TINT_COLORS.yellow;
         for (const annotation of annotations) {
           try {
             msg.send(
