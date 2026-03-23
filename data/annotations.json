@@ -21,27 +21,6 @@
       "updatedAt": "2026-03-23T11:29:23.843Z"
     },
     {
-      "id": "1774265376116-6gax493",
-      "publicationId": "alice-in-wonderland",
-      "type": "note",
-      "locator": {
-        "href": "OEBPS/2161886177641920366_11-h-1.htm.html",
-        "type": "application/xhtml+xml",
-        "locations": {
-          "progression": 0,
-          "position": 4,
-          "totalProgression": 0.03571428571428571
-        },
-        "text": {
-          "highlight": "n to look about her and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelv"
-        }
-      },
-      "color": "blue",
-      "note": "Write your note here. ",
-      "createdAt": "2026-03-23T11:29:36.116Z",
-      "updatedAt": "2026-03-23T11:29:36.116Z"
-    },
-    {
       "id": "1774265406903-vy0j4z0",
       "publicationId": "alice-in-wonderland",
       "type": "note",
