@@ -269,6 +269,27 @@
       },
       "createdAt": "2026-03-23T14:36:50.350Z",
       "updatedAt": "2026-03-23T14:36:50.350Z"
+    },
+    {
+      "id": "1774276635206-hy4f18d",
+      "publicationId": "frankenstein",
+      "type": "note",
+      "locator": {
+        "href": "OEBPS/5022876589018207656_84-h-6.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 23,
+          "totalProgression": 0.1004566210045662
+        },
+        "text": {
+          "highlight": "Several months passed in this manner. Her father grew worse; her time was more entirely occupied in attending him; her means of subsistence decreased; and in the tenth month her father died in her arms, leaving her an orphan and a beggar. This last blow overcame her, and she knelt by Beaufort’s coffin weeping bitterly, when my father entered the chamber. He came like a protecting spirit to the poor girl, who committed herself to his care; and after the interment of his friend he conducted her to Geneva and placed her under the protection of a relation. Two years after this event Caroline became his wife."
+        }
+      },
+      "color": "blue",
+      "note": "Blue note goes here. ",
+      "createdAt": "2026-03-23T14:37:15.206Z",
+      "updatedAt": "2026-03-23T14:37:15.206Z"
     }
   ]
 }
