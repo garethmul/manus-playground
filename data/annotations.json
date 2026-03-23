@@ -20,6 +20,26 @@
       "note": "Alice is getting bored here — interesting opening!",
       "createdAt": "2026-03-23T11:12:22.839Z",
       "updatedAt": "2026-03-23T11:12:22.839Z"
+    },
+    {
+      "id": "1774265363843-if7i8k6",
+      "publicationId": "alice-in-wonderland",
+      "type": "highlight",
+      "locator": {
+        "href": "OEBPS/2161886177641920366_11-h-1.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 4,
+          "totalProgression": 0.03571428571428571
+        },
+        "text": {
+          "highlight": "There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!” (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural); but when the Rabbit actually took a watch out of its waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet, for it flashe"
+        }
+      },
+      "color": "purple",
+      "createdAt": "2026-03-23T11:29:23.843Z",
+      "updatedAt": "2026-03-23T11:29:23.843Z"
     }
   ]
 }
