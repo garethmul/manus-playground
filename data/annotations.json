@@ -104,5 +104,27 @@
       "createdAt": "2026-03-23T12:07:49.781Z",
       "updatedAt": "2026-03-23T12:07:49.781Z"
     }
+  ],
+  "frankenstein": [
+    {
+      "id": "1774273920353-sjf2yis",
+      "publicationId": "frankenstein",
+      "type": "highlight",
+      "locator": {
+        "href": "OEBPS/5022876589018207656_84-h-3.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 9,
+          "totalProgression": 0.0365296803652968
+        },
+        "text": {
+          "highlight": "aken towards my enterprise. I have hired a vessel and am occupied in collecting my sailors; those whom I have already engaged appear to be men on whom I can depend and are certainly possessed of dauntless courage.\n\nBut I have one want which I"
+        }
+      },
+      "color": "purple",
+      "createdAt": "2026-03-23T13:52:00.353Z",
+      "updatedAt": "2026-03-23T13:52:00.353Z"
+    }
   ]
 }
