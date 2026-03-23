@@ -40,6 +40,27 @@
       "color": "red",
       "createdAt": "2026-03-23T11:46:03.130Z",
       "updatedAt": "2026-03-23T11:46:03.130Z"
+    },
+    {
+      "id": "1774266795517-jmc5lkk",
+      "publicationId": "alice-in-wonderland",
+      "type": "note",
+      "locator": {
+        "href": "OEBPS/chapter_001.xhtml",
+        "type": "application/xhtml+xml",
+        "title": "CHAPTER I. Down the Rabbit-Hole",
+        "locations": {
+          "progression": 0.01,
+          "position": 1
+        },
+        "text": {
+          "highlight": "Alice was beginning to get very tired of sitting by her sister"
+        }
+      },
+      "color": "yellow",
+      "note": "Test note for click detection",
+      "createdAt": "2026-03-23T11:53:15.516Z",
+      "updatedAt": "2026-03-23T11:53:15.516Z"
     }
   ]
 }
