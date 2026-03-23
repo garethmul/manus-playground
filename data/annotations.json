@@ -61,6 +61,27 @@
       "note": "Test note for click detection",
       "createdAt": "2026-03-23T11:53:15.516Z",
       "updatedAt": "2026-03-23T11:53:15.516Z"
+    },
+    {
+      "id": "1774267632941-o4536lz",
+      "publicationId": "alice-in-wonderland",
+      "type": "note",
+      "locator": {
+        "href": "OEBPS/2161886177641920366_11-h-2.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 10,
+          "totalProgression": 0.10714285714285714
+        },
+        "text": {
+          "highlight": "“Curiouser and curiouser!” cried Alice (she was so much surprised, that for the moment she quite forgot how to speak good English); “now I’m opening out like the largest telescope that ever was! Good-bye, feet!” (for when she looked down at her feet, they seemed to be almost out of sight, they were getting so far off)."
+        }
+      },
+      "color": "blue",
+      "note": "Adda note in blue",
+      "createdAt": "2026-03-23T12:07:12.941Z",
+      "updatedAt": "2026-03-23T12:07:12.941Z"
     }
   ]
 }
