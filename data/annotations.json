@@ -173,6 +173,27 @@
       },
       "createdAt": "2026-03-23T14:29:05.190Z",
       "updatedAt": "2026-03-23T14:29:05.190Z"
+    },
+    {
+      "id": "1774276301601-x61v016",
+      "publicationId": "frankenstein",
+      "type": "note",
+      "locator": {
+        "href": "OEBPS/5022876589018207656_84-h-3.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 9,
+          "totalProgression": 0.0365296803652968
+        },
+        "text": {
+          "highlight": "The master is a person of an excellent disposition and is remarkable in the ship for his gentleness and the mildness of his discipline. This circumstance, added to his well-known integrity and dauntless courage, made me very desirous to engage him. A youth passed in solitude, my best years spent under your gentle and feminine fosterage, has so refined the groundwork of my character that I cannot overcome an intense distaste to the usual brutality exercised on board ship: I have never believed it to be necessary, and when I heard of a mariner equally noted for his kindliness of heart and the respect and obedience paid to him by his crew, I felt myself peculiarly fortunate in being able to secu"
+        }
+      },
+      "color": "yellow",
+      "note": "My note here. ",
+      "createdAt": "2026-03-23T14:31:41.594Z",
+      "updatedAt": "2026-03-23T14:31:41.594Z"
     }
   ]
 }
