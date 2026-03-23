@@ -9,22 +9,20 @@
  * 1. It renders the toolbar button (bookmark + annotations panel toggle) using
  *    Thorium's StatefulActionIcon so it integrates seamlessly with the reader UI.
  *
- * 2. Because Trigger components are always mounted (unlike Target/Container
- *    components which only mount when the panel is open), this is also where we
+ * 2. Because Trigger components are always mounted, this is also where we
  *    register the text-selection listener and render the floating SelectionToolbar
  *    and NoteEditor.  This ensures annotations are always interactive while reading.
  *
- * Architecture note
- * ─────────────────
- * Thorium Web's StatefulReader hardcodes `textSelected: () => {}` in its
- * listeners object, so we cannot inject a handler via props.  Instead we
- * intercept the raw `window.postMessage` events that the Readium iframe sends
- * when the user selects text.  The message format is:
+ * Architecture note — text selection
+ * ────────────────────────────────────
+ * The Readium iframes are same-origin (served from the same Next.js host), so
+ * we can inject a `selectionchange` listener directly into each iframe's document.
+ * When the user finishes selecting text (mouseup / touchend), we read the
+ * Selection object, compute the absolute position in the parent window, and
+ * update the React state to show the SelectionToolbar at that position.
  *
- *   { _readium: 1, key: "text_selected", data: { text, x, y, width, height } }
- *
- * This is a proof-of-concept approach.  The recommended open-source
- * contribution would be to add an `onTextSelected` prop to StatefulReader.
+ * We poll for new iframes every second so that the listener is re-attached
+ * whenever the navigator loads a new spine item.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -47,11 +45,9 @@ import { NoteEditor } from "./NoteEditor";
 import { BookmarkButton } from "./BookmarkButton";
 
 // ─── Publication ID resolution ────────────────────────────────────────────────
-// The publicationId is derived from the URL path at runtime.
 function usePublicationId(): string {
   if (typeof window === "undefined") return "unknown";
   const parts = window.location.pathname.split("/");
-  // URL pattern: /read/[identifier]
   const readIdx = parts.indexOf("read");
   if (readIdx !== -1 && parts[readIdx + 1]) {
     return decodeURIComponent(parts[readIdx + 1]);
@@ -66,6 +62,8 @@ interface SelectionEvent {
   y: number;
   width: number;
   height: number;
+  /** The iframe element the selection came from, so we can read its locator */
+  sourceIframe?: HTMLIFrameElement;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -79,12 +77,14 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   const { getCframes, currentLocator } = useNavigator();
 
   const publicationId = usePublicationId();
-  const { highlights, notes, addAnnotation, fetchAnnotations } =
-    useAnnotations(publicationId);
+  const { highlights, notes, addAnnotation } = useAnnotations(publicationId);
 
   const [selection, setSelection] = useState<SelectionEvent | null>(null);
   const [pendingSelection, setPendingSelection] = useState<SelectionEvent | null>(null);
   const [isNoteEditorOpen, setIsNoteEditorOpen] = useState(false);
+
+  // Track which iframes we've already injected into
+  const injectedIframes = useRef<Set<HTMLIFrameElement>>(new Set());
 
   // ── Toggle panel open/close ─────────────────────────────────────────────
   const setOpen = useCallback(
@@ -95,35 +95,84 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
     [dispatch]
   );
 
-  // ── Listen for text selection postMessages from the Readium iframe ──────
+  // ── Dismiss selection when clicking outside the toolbar ─────────────────
+  const dismissSelection = useCallback(() => setSelection(null), []);
+
+  // ── Inject selection listeners into Readium iframes ─────────────────────
+  // The iframes are same-origin, so we can access their documents directly.
+  // We use a polling interval to catch new iframes as the navigator loads
+  // new spine items.
   useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      const data = event.data;
-      if (
-        data &&
-        typeof data === "object" &&
-        data._readium === 1 &&
-        data.key === "text_selected" &&
-        data.data
-      ) {
-        const sel = data.data;
-        const text: string = sel.text || sel.selectedText || "";
-        if (text.trim().length === 0) {
-          // Empty selection — dismiss toolbar
-          setSelection(null);
-          return;
-        }
-        setSelection({
-          text,
-          x: sel.x ?? sel.clientX ?? 0,
-          y: sel.y ?? sel.clientY ?? 0,
-          width: sel.width ?? 0,
-          height: sel.height ?? 0,
-        });
+    if (typeof window === "undefined") return;
+
+    const injectIntoIframe = (iframe: HTMLIFrameElement) => {
+      if (injectedIframes.current.has(iframe)) return;
+
+      try {
+        const iframeWin = iframe.contentWindow;
+        const iframeDoc = iframe.contentDocument;
+        if (!iframeWin || !iframeDoc) return;
+
+        // We listen on mouseup / touchend rather than selectionchange so we
+        // only fire once the user has finished selecting (not on every character).
+        const handlePointerUp = () => {
+          // Small delay so the selection is finalised
+          setTimeout(() => {
+            const sel = iframeWin.getSelection();
+            if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+
+            const text = sel.toString().trim();
+            if (text.length === 0) return;
+
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) return;
+
+            // Translate iframe-relative coords to parent-window coords
+            const iframeRect = iframe.getBoundingClientRect();
+            const absX = iframeRect.left + rect.left;
+            const absY = iframeRect.top + rect.top;
+
+            setSelection({
+              text,
+              x: absX,
+              y: absY,
+              width: rect.width,
+              height: rect.height,
+              sourceIframe: iframe,
+            });
+          }, 50);
+        };
+
+        // Dismiss toolbar when the user clicks without selecting
+        const handlePointerDown = () => {
+          const sel = iframeWin.getSelection();
+          if (!sel || sel.isCollapsed) {
+            setSelection(null);
+          }
+        };
+
+        iframeDoc.addEventListener("mouseup", handlePointerUp);
+        iframeDoc.addEventListener("touchend", handlePointerUp);
+        iframeDoc.addEventListener("mousedown", handlePointerDown);
+
+        injectedIframes.current.add(iframe);
+      } catch {
+        // Cross-origin or not yet loaded — skip silently
       }
     };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
+
+    const scanForIframes = () => {
+      const iframes = document.querySelectorAll<HTMLIFrameElement>(
+        "iframe.readium-navigator-iframe"
+      );
+      iframes.forEach(injectIntoIframe);
+    };
+
+    // Scan immediately and then every second
+    scanForIframes();
+    const interval = setInterval(scanForIframes, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // ── Apply decorations (highlights) to the iframe ─────────────────────────
@@ -138,14 +187,12 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
       const msg = (cframe as any)?.msg;
       if (!msg) continue;
 
-      // Clear previous decorations for this group
       try {
         msg.send("decorate", { group: "wcp-annotations", action: "clear" }, () => {});
       } catch {
         /* ignore */
       }
 
-      // Re-add each annotation as a decoration
       for (const annotation of annotated) {
         if (!annotation.locator?.text?.highlight) continue;
         const color =
@@ -329,12 +376,12 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         </StatefulActionIcon>
       )}
 
-      {/* Floating selection toolbar — rendered at document root level via fixed positioning */}
+      {/* Floating selection toolbar — fixed-positioned at selection coordinates */}
       <SelectionToolbar
         selection={selection}
         onHighlight={handleHighlight}
         onNote={handleOpenNote}
-        onDismiss={() => setSelection(null)}
+        onDismiss={dismissSelection}
       />
 
       {/* Note editor modal */}
