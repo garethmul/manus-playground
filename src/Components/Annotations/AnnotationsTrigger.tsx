@@ -321,13 +321,11 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
             const clientX = "clientX" in e ? e.clientX : e.changedTouches[0].clientX;
             const clientY = "clientY" in e ? e.clientY : e.changedTouches[0].clientY;
 
-            // Use caretRangeFromPoint to find what was clicked
-            const caretRange = iframeDoc.caretRangeFromPoint?.(clientX, clientY);
-            if (!caretRange) return;
-
-            // Check all note CSS Highlight ranges to see if the caret is inside one.
+            // Check all note CSS Highlight ranges to see if the click landed on a note.
             // The navigator maps our group names to internal readium-decoration-N IDs,
             // so we iterate ALL CSS highlight groups and match by range text content.
+            // We use getClientRects() for reliable hit-testing rather than compareBoundaryPoints,
+            // because the iframe's coordinate space can differ from what caretRangeFromPoint returns.
             const currentNotes = notesRef.current;
             // Build a quick lookup: highlight text → note (for notes on this page)
             const noteByText = new Map<string, typeof currentNotes[0]>();
@@ -345,11 +343,19 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
             for (const [, highlightGroup] of highlights) {
               for (const range of highlightGroup) {
                 try {
-                  // Check if the caret position is within this range
-                  const startCmp = caretRange.compareBoundaryPoints(Range.START_TO_START, range);
-                  const endCmp = caretRange.compareBoundaryPoints(Range.END_TO_END, range);
-                  if (startCmp >= 0 && endCmp <= 0) {
-                    // Click is inside this range — check if it's a note
+                  // Use bounding rects for reliable hit-testing
+                  const rects = range.getClientRects();
+                  let hitFound = false;
+                  for (let ri = 0; ri < rects.length; ri++) {
+                    const r = rects[ri];
+                    // Expand hit area by 4px vertically for easier tapping
+                    if (clientX >= r.left && clientX <= r.right &&
+                        clientY >= r.top - 4 && clientY <= r.bottom + 4) {
+                      hitFound = true;
+                      break;
+                    }
+                  }
+                  if (hitFound) {
                     const rangeText = range.toString();
                     const matchedNote = noteByText.get(rangeText);
                     if (matchedNote) {
@@ -361,7 +367,7 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
                     }
                   }
                 } catch {
-                  // Range comparison may throw if ranges are in different documents
+                  // Range may throw if not in the current document
                 }
               }
             }
@@ -500,12 +506,15 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
     document.querySelectorAll<HTMLIFrameElement>("iframe.readium-navigator-iframe")
       .forEach(injectNoteStyles);
 
-    // After the navigator has had time to add/update decoration style elements,
-    // explicitly patch any note groups (belt-and-suspenders alongside the MutationObserver).
-    setTimeout(() => {
-      document.querySelectorAll<HTMLIFrameElement>("iframe.readium-navigator-iframe")
-        .forEach(patchNoteStylesInIframe);
-    }, 300);
+    // Patch note styles at multiple intervals to eliminate any flicker window.
+    // The navigator processes decorate messages asynchronously, so we patch:
+    //   - immediately (catches synchronous processing)
+    //   - after 30ms (catches first async tick)
+    //   - after 100ms (belt-and-suspenders)
+    const iframes = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe.readium-navigator-iframe"));
+    iframes.forEach(patchNoteStylesInIframe);
+    setTimeout(() => iframes.forEach(patchNoteStylesInIframe), 30);
+    setTimeout(() => iframes.forEach(patchNoteStylesInIframe), 100);
   }, [getCframes, highlights, notes, injectNoteStyles, patchNoteStylesInIframe]);
 
   // Re-apply decorations whenever the annotation list changes
