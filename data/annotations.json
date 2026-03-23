@@ -82,6 +82,27 @@
       "note": "Adda note in blue",
       "createdAt": "2026-03-23T12:07:12.941Z",
       "updatedAt": "2026-03-23T12:07:12.941Z"
+    },
+    {
+      "id": "1774267669781-0q1eowf",
+      "publicationId": "alice-in-wonderland",
+      "type": "note",
+      "locator": {
+        "href": "OEBPS/2161886177641920366_11-h-2.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 10,
+          "totalProgression": 0.10714285714285714
+        },
+        "text": {
+          "highlight": "And she went on planning to herself how she would manage it. “They must go by the carrier,” she thought; “and how funny it’ll seem, sending presents to one’s own feet! And how odd the directions will look!"
+        }
+      },
+      "color": "green",
+      "note": "Green note",
+      "createdAt": "2026-03-23T12:07:49.781Z",
+      "updatedAt": "2026-03-23T12:07:49.781Z"
     }
   ]
 }
