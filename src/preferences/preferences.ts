@@ -14,7 +14,8 @@ import {
 
 export enum PlaygroundActionsKeys {
   layoutPresets = "layoutPresets",
-  readerSettings = "readerSettings"
+  readerSettings = "readerSettings",
+  annotations = "annotations"
 }
 
 export type CustomKeys = CustomizableKeys & {
@@ -43,6 +44,7 @@ export const playgroundPreferences = createPreferences<CustomKeys>({
       ThActionsKeys.toc,
       ThActionsKeys.fullscreen,
       ThActionsKeys.jumpToPosition,
+      PlaygroundActionsKeys.annotations,
       PlaygroundActionsKeys.layoutPresets,
       PlaygroundActionsKeys.readerSettings
     ],
@@ -51,6 +53,7 @@ export const playgroundPreferences = createPreferences<CustomKeys>({
       ThActionsKeys.toc,
       ThActionsKeys.jumpToPosition,
       ThActionsKeys.fullscreen,
+      PlaygroundActionsKeys.annotations,
       PlaygroundActionsKeys.readerSettings
     ],
     webPubOrder: defaultPreferences.actions.webPubOrder,
@@ -97,6 +100,29 @@ export const playgroundPreferences = createPreferences<CustomKeys>({
           peekHeight: 50,
           minHeight: 30,
           maxHeight: 100
+        }
+      },
+      [PlaygroundActionsKeys.annotations]: {
+        visibility: ThCollapsibilityVisibility.always,
+        shortcut: null,
+        sheet: {
+          defaultSheet: ThSheetTypes.popover,
+          breakpoints: {
+            [ThBreakpoints.compact]: ThSheetTypes.bottomSheet
+          }
+        },
+        docked: {
+          dockable: ThDockingTypes.end,
+          dragIndicator: false,
+          width: 320,
+          minWidth: 280,
+          maxWidth: 420
+        },
+        snapped: {
+          scrim: false,
+          peekHeight: 50,
+          minHeight: 30,
+          maxHeight: 80
         }
       }
     }

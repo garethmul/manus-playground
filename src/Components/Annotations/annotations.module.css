@@ -1,0 +1,420 @@
+/* ============================================
+   SELECTION TOOLBAR
+   ============================================ */
+
+.selectionToolbar {
+  background: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  padding: 6px 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: all;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.toolbarButtons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbarButton {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.toolbarButton:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 2px;
+}
+
+.colorPicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+}
+
+.colorSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.colorSwatch:hover {
+  transform: scale(1.2);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.colorSwatchSelected {
+  border-color: #ffffff !important;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   NOTE EDITOR MODAL
+   ============================================ */
+
+.noteEditorOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.noteEditor {
+  background: #ffffff;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 600px;
+  padding: 20px 20px 32px;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.noteEditorQuote {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.noteEditorQuoteBar {
+  width: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  min-height: 40px;
+}
+
+.noteEditorQuoteText {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  margin: 0;
+  flex: 1;
+}
+
+.noteEditorColorRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  justify-content: center;
+}
+
+.noteEditorColorRow .colorSwatch {
+  width: 28px;
+  height: 28px;
+}
+
+.noteEditorLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.noteEditorTextarea {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.noteEditorTextarea:focus {
+  border-color: #0ea5e9;
+}
+
+.noteEditorTextarea::placeholder {
+  color: #bbb;
+}
+
+.noteEditorActions {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.noteEditorDeleteBtn {
+  background: #fff0f0;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.noteEditorDeleteBtn:hover {
+  background: #ffd5d5;
+}
+
+.noteEditorSaveBtn {
+  background: #e8e8e8;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition: background 0.15s, color 0.15s;
+}
+
+.noteEditorSaveBtn:hover {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+/* ============================================
+   ANNOTATIONS PANEL
+   ============================================ */
+
+.annotationsPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+
+.tab:hover {
+  color: #333;
+}
+
+.tabActive {
+  color: #0ea5e9;
+  font-weight: 600;
+}
+
+.tabActive::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #0ea5e9;
+  border-radius: 2px 2px 0 0;
+}
+
+.tabBadge {
+  background: #0ea5e9;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.annotationList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.emptyState {
+  padding: 24px 16px;
+  font-size: 13px;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.annotationItem {
+  display: flex;
+  align-items: stretch;
+  padding: 4px 8px;
+  gap: 4px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.annotationItemContent {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px 4px;
+  text-align: left;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+
+.annotationItemContent:hover {
+  background: #f5f9ff;
+}
+
+.bookmarkIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.highlightColorBar {
+  width: 4px;
+  border-radius: 2px;
+  min-height: 40px;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.annotationItemText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.annotationChapter {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.annotationProgression {
+  font-size: 11px;
+  color: #999;
+}
+
+.annotationQuote {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.annotationNote {
+  font-size: 12px;
+  color: #0ea5e9;
+  font-style: italic;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.annotationDeleteBtn,
+.annotationEditBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 4px;
+  color: #ccc;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.annotationDeleteBtn:hover {
+  color: #ef4444;
+  background: #fff0f0;
+}
+
+.annotationEditBtn:hover {
+  color: #0ea5e9;
+  background: #f0f8ff;
+}
+
+/* ============================================
+   BOOKMARK BUTTON (in reader toolbar)
+   ============================================ */
+
+.bookmarkTrigger {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  color: inherit;
+}
+
+.bookmarkTrigger:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.bookmarkTriggerActive {
+  color: #0ea5e9;
+}

@@ -7,6 +7,8 @@ import { PlaygroundLayoutPresetsTrigger } from "./Actions/LayoutPresets/Playgrou
 import { PlaygroundLayoutPresetsContainer } from "./Actions/LayoutPresets/PlaygroundLayoutPresetsContainer";
 import { PlaygroundReaderSettingsTrigger } from "./Actions/ReaderSettings/PlaygroundReaderSettingsTrigger";
 import { PlaygroundReaderSettingsContainer } from "./Actions/ReaderSettings/PlaygroundReaderSettingsContainer";
+import { AnnotationsTrigger } from "./Annotations/AnnotationsTrigger";
+import { AnnotationsContainer } from "./Annotations/AnnotationsContainer";
 
 export const CustomReader = ({
   rawManifest,
@@ -17,7 +19,7 @@ export const CustomReader = ({
       id: "custom",
       name: "Custom Components",
       description: "Custom components for Readium Playground StatefulReader",
-      version: "1.1.3",
+      version: "1.2.0",
       components: {
         actions: {
           [PlaygroundActionsKeys.layoutPresets]: {
@@ -27,6 +29,10 @@ export const CustomReader = ({
           [PlaygroundActionsKeys.readerSettings]: {
             Trigger: PlaygroundReaderSettingsTrigger,
             Target: PlaygroundReaderSettingsContainer
+          },
+          [PlaygroundActionsKeys.annotations]: {
+            Trigger: AnnotationsTrigger,
+            Target: AnnotationsContainer
           }
         }
       }

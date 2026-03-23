@@ -1,0 +1,9 @@
+export { AnnotationsPlugin } from "./AnnotationsPlugin";
+export { AnnotationsTrigger } from "./AnnotationsTrigger";
+export { AnnotationsContainer } from "./AnnotationsContainer";
+export { BookmarkButton } from "./BookmarkButton";
+export { AnnotationsPanel } from "./AnnotationsPanel";
+export { SelectionToolbar } from "./SelectionToolbar";
+export { NoteEditor } from "./NoteEditor";
+export { useAnnotations, HIGHLIGHT_COLORS } from "./useAnnotations";
+export type { Annotation, AnnotationType, HighlightColor, Locator } from "./useAnnotations";
