@@ -21,26 +21,6 @@
       "updatedAt": "2026-03-23T11:29:23.843Z"
     },
     {
-      "id": "1774265367109-exmeydb",
-      "publicationId": "alice-in-wonderland",
-      "type": "highlight",
-      "locator": {
-        "href": "OEBPS/2161886177641920366_11-h-1.htm.html",
-        "type": "application/xhtml+xml",
-        "locations": {
-          "progression": 0,
-          "position": 4,
-          "totalProgression": 0.03571428571428571
-        },
-        "text": {
-          "highlight": "ce to herself, “after such a fall as this, I shall think nothing of tumbling down stairs! How brave they’ll all think me at home! Why, I wouldn’t say anything about it, even if I fell off the top of the house!” (Which was very likely true.)\n\nDown, down, down. Would the fall never come to an end? “I wonder how many miles I’ve fallen by this time?” she said aloud. “I must be getting somewhere near the centre of the earth. Let me see: that would be four thousand mi"
-        }
-      },
-      "color": "orange",
-      "createdAt": "2026-03-23T11:29:27.109Z",
-      "updatedAt": "2026-03-23T11:29:27.109Z"
-    },
-    {
       "id": "1774265376116-6gax493",
       "publicationId": "alice-in-wonderland",
       "type": "note",
