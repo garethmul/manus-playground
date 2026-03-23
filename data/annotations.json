@@ -178,6 +178,22 @@
       },
       "createdAt": "2026-03-23T14:03:32.965Z",
       "updatedAt": "2026-03-23T14:03:32.965Z"
+    },
+    {
+      "id": "1774276145223-s6daoj3",
+      "publicationId": "frankenstein",
+      "type": "bookmark",
+      "locator": {
+        "href": "OEBPS/5022876589018207656_84-h-3.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 9,
+          "totalProgression": 0.0365296803652968
+        }
+      },
+      "createdAt": "2026-03-23T14:29:05.190Z",
+      "updatedAt": "2026-03-23T14:29:05.190Z"
     }
   ]
 }
