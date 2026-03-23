@@ -26,6 +26,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import {
   StatefulActionIcon,
   StatefulOverflowMenuItem,
@@ -62,8 +63,14 @@ interface SelectionEvent {
   y: number;
   width: number;
   height: number;
-  /** The iframe element the selection came from, so we can read its locator */
+  /** The iframe element the selection came from, so we can clear it later */
   sourceIframe?: HTMLIFrameElement;
+}
+
+// ─── Toast notification ───────────────────────────────────────────────────────
+interface ToastState {
+  message: string;
+  visible: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -82,9 +89,31 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   const [selection, setSelection] = useState<SelectionEvent | null>(null);
   const [pendingSelection, setPendingSelection] = useState<SelectionEvent | null>(null);
   const [isNoteEditorOpen, setIsNoteEditorOpen] = useState(false);
+  const [toast, setToast] = useState<ToastState>({ message: "", visible: false });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track which iframes we've already injected into
   const injectedIframes = useRef<Set<HTMLIFrameElement>>(new Set());
+
+  // ── Toast helper ────────────────────────────────────────────────────────────
+  const showToast = useCallback((message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, visible: true });
+    toastTimerRef.current = setTimeout(() => {
+      setToast((prev) => ({ ...prev, visible: false }));
+    }, 1800);
+  }, []);
+
+  // ── Clear selection in the source iframe ────────────────────────────────────
+  const clearIframeSelection = useCallback((iframe?: HTMLIFrameElement) => {
+    try {
+      if (iframe?.contentWindow) {
+        iframe.contentWindow.getSelection()?.removeAllRanges();
+      }
+    } catch {
+      // Cross-origin or unavailable — ignore
+    }
+  }, []);
 
   // ── Toggle panel open/close ─────────────────────────────────────────────
   const setOpen = useCallback(
@@ -255,11 +284,16 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         text: { highlight: selection.text },
       };
 
-      await addAnnotation({ type: "highlight", locator: annotationLocator, color });
+      // Clear the iframe selection BEFORE saving so the highlight colour
+      // is immediately visible (otherwise the blue browser selection overlays it).
+      clearIframeSelection(selection.sourceIframe);
       setSelection(null);
+
+      await addAnnotation({ type: "highlight", locator: annotationLocator, color });
+      showToast("Highlight added ✓");
       setTimeout(applyDecorations, 200);
     },
-    [selection, currentLocator, addAnnotation, applyDecorations]
+    [selection, currentLocator, addAnnotation, applyDecorations, clearIframeSelection, showToast]
   );
 
   // ── Handle note action ────────────────────────────────────────────────────
@@ -287,6 +321,9 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         text: { highlight: pendingSelection.text },
       };
 
+      // Clear the iframe selection so the highlight colour is visible immediately
+      clearIframeSelection(pendingSelection.sourceIframe);
+
       await addAnnotation({
         type: "note",
         locator: annotationLocator,
@@ -295,9 +332,10 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
       });
       setIsNoteEditorOpen(false);
       setPendingSelection(null);
+      showToast("Note saved ✓");
       setTimeout(applyDecorations, 200);
     },
-    [pendingSelection, currentLocator, addAnnotation, applyDecorations]
+    [pendingSelection, currentLocator, addAnnotation, applyDecorations, clearIframeSelection, showToast]
   );
 
   // ── Total annotation count for badge ─────────────────────────────────────
@@ -406,6 +444,33 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
           setPendingSelection(null);
         }}
       />
+
+      {/* Toast notification — brief confirmation after highlight / note */}
+      {toast.visible && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "32px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(15, 23, 42, 0.92)",
+            color: "#f8fafc",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: 500,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+            zIndex: 99999,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            letterSpacing: "0.01em",
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          {toast.message}
+        </div>
+      )}
     </>
   );
 };
