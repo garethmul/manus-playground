@@ -173,6 +173,26 @@
       },
       "createdAt": "2026-03-23T14:29:05.190Z",
       "updatedAt": "2026-03-23T14:29:05.190Z"
+    },
+    {
+      "id": "1774276323807-bgo3zgf",
+      "publicationId": "frankenstein",
+      "type": "highlight",
+      "locator": {
+        "href": "OEBPS/5022876589018207656_84-h-3.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 9,
+          "totalProgression": 0.0365296803652968
+        },
+        "text": {
+          "highlight": "Well, these are useless complaints; I shall certainly find no friend on the wide ocean, nor even here in Archangel, among merchants and seamen. Yet some feelings, unallied to the dross of human nature, beat even in these rugged bosoms. My lieutenant, for instance, is a man of wonderful courage and enterprise; he is madly desirous of glory, or rather, to word my phrase mo"
+        }
+      },
+      "color": "red",
+      "createdAt": "2026-03-23T14:32:03.807Z",
+      "updatedAt": "2026-03-23T14:32:03.807Z"
     }
   ]
 }
