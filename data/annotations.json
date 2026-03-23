@@ -253,6 +253,22 @@
       "color": "yellow",
       "createdAt": "2026-03-23T14:36:36.176Z",
       "updatedAt": "2026-03-23T14:36:36.176Z"
+    },
+    {
+      "id": "1774276602953-a1tnfk1",
+      "publicationId": "frankenstein",
+      "type": "bookmark",
+      "locator": {
+        "href": "OEBPS/5022876589018207656_84-h-6.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 23,
+          "totalProgression": 0.1004566210045662
+        }
+      },
+      "createdAt": "2026-03-23T14:36:42.953Z",
+      "updatedAt": "2026-03-23T14:36:42.953Z"
     }
   ]
 }
