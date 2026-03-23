@@ -213,6 +213,26 @@
       "color": "purple",
       "createdAt": "2026-03-23T14:36:09.021Z",
       "updatedAt": "2026-03-23T14:36:09.021Z"
+    },
+    {
+      "id": "1774276576553-eiyn0x8",
+      "publicationId": "frankenstein",
+      "type": "highlight",
+      "locator": {
+        "href": "OEBPS/5022876589018207656_84-h-2.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 5,
+          "totalProgression": 0.0182648401826484
+        },
+        "text": {
+          "highlight": "These reflections have dispelled the agitation with which I began my letter, and I feel my heart glow with an enthusiasm which elevates me to heaven, for nothing contributes so much to tranquillise the mind as a steady purpose—a point on which the soul may fix its intellectual eye. This expedition has been the favourite dream of my early years."
+        }
+      },
+      "color": "purple",
+      "createdAt": "2026-03-23T14:36:16.553Z",
+      "updatedAt": "2026-03-23T14:36:16.553Z"
     }
   ]
 }
