@@ -165,6 +165,36 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   // ── Dismiss selection when clicking outside the toolbar ─────────────────
   const dismissSelection = useCallback(() => setSelection(null), []);
 
+  // ── Patch note decoration CSS in a single iframe ──────────────────────────
+  // Scans all style[data-readium] elements in the iframe and replaces any that
+  // use a NOTE_TINT_COLOR background with underline CSS.
+  const patchNoteStylesInIframe = useCallback((iframe: HTMLIFrameElement) => {
+    try {
+      const iframeDoc = iframe.contentDocument;
+      if (!iframeDoc) return;
+      iframeDoc.querySelectorAll<HTMLStyleElement>("style[data-readium]").forEach((styleEl) => {
+        const css = styleEl.textContent ?? "";
+        const bgMatch = css.match(/background-color:\s*([^;]+);/);
+        if (!bgMatch) return;
+        const bgColor = bgMatch[1].trim().toLowerCase();
+        if (!NOTE_TINT_SET.has(bgColor)) return;
+        const groupMatch = css.match(/::highlight\(([^)]+)\)/);
+        if (!groupMatch) return;
+        const groupName = groupMatch[1];
+        styleEl.textContent = `
+          ::highlight(${groupName}) {
+            background-color: transparent !important;
+            color: inherit !important;
+            text-decoration: underline !important;
+            text-decoration-color: ${bgColor} !important;
+            text-decoration-thickness: 2px !important;
+            text-underline-offset: 3px !important;
+          }
+        `;
+      });
+    } catch { /* ignore */ }
+  }, []);
+
   // ── Inject a MutationObserver into an iframe to patch note decoration CSS ──
   // The Readium navigator maps our group name (e.g. "wcp-notes-blue") to an
   // internal sequential ID (e.g. "readium-decoration-8") and injects a <style>
@@ -469,7 +499,14 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
     // Re-inject note styles into all current iframes (in case they reloaded)
     document.querySelectorAll<HTMLIFrameElement>("iframe.readium-navigator-iframe")
       .forEach(injectNoteStyles);
-  }, [getCframes, highlights, notes, injectNoteStyles]);
+
+    // After the navigator has had time to add/update decoration style elements,
+    // explicitly patch any note groups (belt-and-suspenders alongside the MutationObserver).
+    setTimeout(() => {
+      document.querySelectorAll<HTMLIFrameElement>("iframe.readium-navigator-iframe")
+        .forEach(patchNoteStylesInIframe);
+    }, 300);
+  }, [getCframes, highlights, notes, injectNoteStyles, patchNoteStylesInIframe]);
 
   // Re-apply decorations whenever the annotation list changes
   useEffect(() => {

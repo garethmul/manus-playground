@@ -2,7 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "./annotations.module.css";
-import { Annotation, HighlightColor, HIGHLIGHT_COLORS } from "./useAnnotations";
+import { Annotation, HighlightColor } from "./useAnnotations";
+
+// Note underline colours — must match NOTE_TINT_COLORS in AnnotationsTrigger
+const NOTE_TINT_COLORS: Record<HighlightColor, string> = {
+  yellow: "#FFC107",
+  green:  "#4CAF50",
+  blue:   "#2196F3",
+  red:    "#F44336",
+  purple: "#9C27B0",
+  orange: "#FF9800",
+};
 
 interface NoteEditorProps {
   isOpen: boolean;
@@ -23,14 +33,14 @@ export const NoteEditor = ({
 }: NoteEditorProps) => {
   const [noteText, setNoteText] = useState(existingNote?.note || "");
   const [selectedColor, setSelectedColor] = useState<HighlightColor>(
-    existingNote?.color || "blue"
+    existingNote?.color || "yellow"
   );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setNoteText(existingNote?.note || "");
-      setSelectedColor(existingNote?.color || "blue");
+      setSelectedColor(existingNote?.color || "yellow");
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [isOpen, existingNote]);
@@ -48,24 +58,24 @@ export const NoteEditor = ({
         className={styles.noteEditor}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Selected text preview */}
+        {/* Selected text preview — left border uses the underline colour */}
         <div className={styles.noteEditorQuote}>
           <div
             className={styles.noteEditorQuoteBar}
-            style={{ backgroundColor: HIGHLIGHT_COLORS[selectedColor] }}
+            style={{ backgroundColor: NOTE_TINT_COLORS[selectedColor] }}
           />
           <p className={styles.noteEditorQuoteText}>{displayText}</p>
         </div>
 
-        {/* Color picker */}
+        {/* Underline colour picker */}
         <div className={styles.noteEditorColorRow}>
           {colors.map((color) => (
             <button
               key={color}
               className={`${styles.colorSwatch} ${selectedColor === color ? styles.colorSwatchSelected : ""}`}
-              style={{ backgroundColor: HIGHLIGHT_COLORS[color] }}
+              style={{ backgroundColor: NOTE_TINT_COLORS[color] }}
               onClick={() => setSelectedColor(color)}
-              aria-label={`${color} highlight`}
+              aria-label={`${color} underline`}
               aria-pressed={selectedColor === color}
             />
           ))}
