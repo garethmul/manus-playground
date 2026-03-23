@@ -176,43 +176,55 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   }, []);
 
   // ── Apply decorations (highlights) to the iframe ─────────────────────────
+  // The CSS Custom Highlights API (used by the R2 navigator's experimentalLayout)
+  // applies a SINGLE colour per highlight group via a single ::highlight() CSS rule.
+  // To support per-annotation colours, we use one decoration group per colour.
   const applyDecorations = useCallback(() => {
     const cframes = getCframes?.();
     if (!cframes || cframes.length === 0) return;
 
     const annotated = [...highlights, ...notes];
 
+    // Group annotations by colour
+    const byColor: Record<string, typeof annotated> = {};
+    for (const annotation of annotated) {
+      if (!annotation.locator?.text?.highlight) continue;
+      const colorKey = annotation.color ?? "yellow";
+      if (!byColor[colorKey]) byColor[colorKey] = [];
+      byColor[colorKey].push(annotation);
+    }
+
     for (const cframe of cframes) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg = (cframe as any)?.msg;
       if (!msg) continue;
 
-      try {
-        msg.send("decorate", { group: "wcp-annotations", action: "clear" }, () => {});
-      } catch {
-        /* ignore */
+      // Clear all per-colour groups
+      for (const colorKey of Object.keys(HIGHLIGHT_COLORS)) {
+        try {
+          msg.send("decorate", { group: `wcp-annotations-${colorKey}`, action: "clear" }, () => {});
+        } catch { /* ignore */ }
       }
 
-      for (const annotation of annotated) {
-        if (!annotation.locator?.text?.highlight) continue;
-        const color =
-          HIGHLIGHT_COLORS[annotation.color as HighlightColor] ?? "#FFE066";
-        try {
-          msg.send(
-            "decorate",
-            {
-              group: "wcp-annotations",
-              action: "add",
-              decoration: {
-                id: annotation.id,
-                locator: annotation.locator,
-                style: { tint: color },
+      // Add each annotation to its colour-specific group
+      for (const [colorKey, annotations] of Object.entries(byColor)) {
+        const tint = HIGHLIGHT_COLORS[colorKey as HighlightColor] ?? "#FFE066";
+        for (const annotation of annotations) {
+          try {
+            msg.send(
+              "decorate",
+              {
+                group: `wcp-annotations-${colorKey}`,
+                action: "add",
+                decoration: {
+                  id: annotation.id,
+                  locator: annotation.locator,
+                  style: { tint },
+                },
               },
-            },
-            () => {}
-          );
-        } catch {
-          /* ignore */
+              () => {}
+            );
+          } catch { /* ignore */ }
         }
       }
     }
