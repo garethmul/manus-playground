@@ -1,3 +1,25 @@
 {
-  "alice-in-wonderland": []
+  "alice-in-wonderland": [
+    {
+      "id": "1774266354295-xrizf46",
+      "publicationId": "alice-in-wonderland",
+      "type": "note",
+      "locator": {
+        "href": "OEBPS/2161886177641920366_11-h-1.htm.html",
+        "type": "application/xhtml+xml",
+        "locations": {
+          "progression": 0,
+          "position": 4,
+          "totalProgression": 0.03571428571428571
+        },
+        "text": {
+          "highlight": "Down, down, down. Would the fall never come to an end? “I wonder how many miles I’ve fallen by this time?” she said aloud. “I must be getting somewhere near the centre of the earth. Let me see: that would be four thousand miles down, I think—” (for, you see, Alice had learnt seve"
+        }
+      },
+      "color": "yellow",
+      "note": "Here's my note. ",
+      "createdAt": "2026-03-23T11:45:54.295Z",
+      "updatedAt": "2026-03-23T11:45:54.295Z"
+    }
+  ]
 }
