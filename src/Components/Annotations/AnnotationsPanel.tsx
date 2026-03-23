@@ -118,15 +118,32 @@ export const AnnotationsPanel = ({
             className={styles.annotationItemContent}
             onClick={() => onGoToLocator(n.locator)}
           >
+            {/* Underline indicator — matches how notes appear in the reader */}
             <div
-              className={styles.highlightColorBar}
-              style={{ backgroundColor: HIGHLIGHT_COLORS[n.color as HighlightColor] || "#87CEEB" }}
+              style={{
+                width: "4px",
+                borderRadius: "2px",
+                minHeight: "40px",
+                flexShrink: 0,
+                alignSelf: "stretch",
+                background: `linear-gradient(to bottom, ${HIGHLIGHT_COLORS[n.color as HighlightColor] || "#87CEEB"} 2px, transparent 2px) 0 bottom / 100% 4px no-repeat`,
+                borderBottom: `3px solid ${HIGHLIGHT_COLORS[n.color as HighlightColor] || "#87CEEB"}`,
+                backgroundColor: "transparent",
+              }}
             />
             <div className={styles.annotationItemText}>
-              <span className={styles.annotationQuote}>
+              <span
+                className={styles.annotationQuote}
+                style={{
+                  textDecoration: "underline",
+                  textDecorationColor: HIGHLIGHT_COLORS[n.color as HighlightColor] || "#87CEEB",
+                  textDecorationThickness: "2px",
+                  textUnderlineOffset: "3px",
+                }}
+              >
                 {n.locator.text?.highlight
                   ? n.locator.text.highlight.substring(0, 80) + (n.locator.text.highlight.length > 80 ? "…" : "")
-                  : "Highlighted text"}
+                  : "Underlined text"}
               </span>
               {n.note && (
                 <span className={styles.annotationNote}>{n.note}</span>

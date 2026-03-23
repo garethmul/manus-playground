@@ -21,8 +21,13 @@
  * Selection object, compute the absolute position in the parent window, and
  * update the React state to show the SelectionToolbar at that position.
  *
- * We poll for new iframes every second so that the listener is re-attached
- * whenever the navigator loads a new spine item.
+ * Architecture note — notes vs highlights
+ * ─────────────────────────────────────────
+ * Highlights use the navigator's tint-based decoration (coloured background).
+ * Notes use the same decoration API but we inject a <style> tag into each iframe
+ * that overrides the navigator's CSS for note groups to render as underlines
+ * instead of background colours.  When the user clicks on an underlined note,
+ * we show a NotePopover with the note text and edit/delete actions.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -40,9 +45,10 @@ import {
 import { ThActionsTriggerVariant } from "@edrlab/thorium-web/core/components";
 import { CustomKeys, PlaygroundActionsKeys } from "@/preferences/preferences";
 import { usePreferences } from "@edrlab/thorium-web/epub";
-import { useAnnotations, HighlightColor, Locator, HIGHLIGHT_COLORS } from "./useAnnotations";
+import { useAnnotations, HighlightColor, Locator, HIGHLIGHT_COLORS, Annotation } from "./useAnnotations";
 import { SelectionToolbar } from "./SelectionToolbar";
 import { NoteEditor } from "./NoteEditor";
+import { NotePopover } from "./NotePopover";
 import { BookmarkButton } from "./BookmarkButton";
 
 // ─── Publication ID resolution ────────────────────────────────────────────────
@@ -67,11 +73,23 @@ interface SelectionEvent {
   sourceIframe?: HTMLIFrameElement;
 }
 
+// ─── Note popover state ───────────────────────────────────────────────────────
+interface NotePopoverState {
+  note: Annotation;
+  anchorX: number;
+  anchorY: number;
+}
+
 // ─── Toast notification ───────────────────────────────────────────────────────
 interface ToastState {
   message: string;
   visible: boolean;
 }
+
+// ─── Note decoration group name ───────────────────────────────────────────────
+// Notes use a single decoration group (no per-colour groups needed since the
+// underline colour is set via injected CSS, not via the tint property).
+const NOTE_GROUP_PREFIX = "wcp-notes";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -84,16 +102,22 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   const { getCframes, currentLocator } = useNavigator();
 
   const publicationId = usePublicationId();
-  const { highlights, notes, addAnnotation } = useAnnotations(publicationId);
+  const { highlights, notes, addAnnotation, deleteAnnotation, updateAnnotation } = useAnnotations(publicationId);
 
   const [selection, setSelection] = useState<SelectionEvent | null>(null);
   const [pendingSelection, setPendingSelection] = useState<SelectionEvent | null>(null);
   const [isNoteEditorOpen, setIsNoteEditorOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<Annotation | null>(null);
+  const [notePopover, setNotePopover] = useState<NotePopoverState | null>(null);
   const [toast, setToast] = useState<ToastState>({ message: "", visible: false });
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track which iframes we've already injected into
   const injectedIframes = useRef<Set<HTMLIFrameElement>>(new Set());
+
+  // Keep a ref to the current notes list so the iframe click handler can access it
+  const notesRef = useRef<Annotation[]>(notes);
+  useEffect(() => { notesRef.current = notes; }, [notes]);
 
   // ── Toast helper ────────────────────────────────────────────────────────────
   const showToast = useCallback((message: string) => {
@@ -127,10 +151,48 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   // ── Dismiss selection when clicking outside the toolbar ─────────────────
   const dismissSelection = useCallback(() => setSelection(null), []);
 
+  // ── Inject CSS into an iframe to make note groups render as underlines ───
+  // The navigator injects ::highlight(groupId) { background-color: tint }
+  // We override this with text-decoration: underline for note groups.
+  const injectNoteStyles = useCallback((iframe: HTMLIFrameElement) => {
+    try {
+      const iframeDoc = iframe.contentDocument;
+      if (!iframeDoc) return;
+
+      const existingStyle = iframeDoc.getElementById("wcp-note-underline-styles");
+      if (existingStyle) return; // already injected
+
+      const style = iframeDoc.createElement("style");
+      style.id = "wcp-note-underline-styles";
+      // We use a wildcard selector that matches all note group highlight names.
+      // The navigator names groups readium-decoration-N where N is a sequential int.
+      // We can't predict the group ID, so instead we inject CSS for every possible
+      // note group name (wcp-notes-yellow, wcp-notes-green, etc.) and also add a
+      // MutationObserver approach below.
+      //
+      // The CSS Custom Highlights API supports text-decoration on ::highlight().
+      // We override background-color to transparent and add underline.
+      const noteColors = Object.keys(HIGHLIGHT_COLORS) as HighlightColor[];
+      const rules = noteColors.map((colorKey) => {
+        const tint = HIGHLIGHT_COLORS[colorKey];
+        return `::highlight(wcp-notes-${colorKey}) {
+          background-color: transparent !important;
+          color: inherit !important;
+          text-decoration: underline !important;
+          text-decoration-color: ${tint} !important;
+          text-decoration-thickness: 2px !important;
+          text-underline-offset: 3px !important;
+        }`;
+      }).join("\n");
+
+      style.textContent = rules;
+      iframeDoc.head.appendChild(style);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // ── Inject selection listeners into Readium iframes ─────────────────────
-  // The iframes are same-origin, so we can access their documents directly.
-  // We use a polling interval to catch new iframes as the navigator loads
-  // new spine items.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -142,34 +204,77 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         const iframeDoc = iframe.contentDocument;
         if (!iframeWin || !iframeDoc) return;
 
+        // Inject underline styles for note groups
+        injectNoteStyles(iframe);
+
         // We listen on mouseup / touchend rather than selectionchange so we
         // only fire once the user has finished selecting (not on every character).
-        const handlePointerUp = () => {
+        const handlePointerUp = (e: MouseEvent | TouchEvent) => {
           // Small delay so the selection is finalised
           setTimeout(() => {
             const sel = iframeWin.getSelection();
-            if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
 
-            const text = sel.toString().trim();
-            if (text.length === 0) return;
+            // If there is a real text selection, show the toolbar
+            if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+              const text = sel.toString().trim();
+              if (text.length > 0) {
+                const range = sel.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                if (rect.width > 0 || rect.height > 0) {
+                  const iframeRect = iframe.getBoundingClientRect();
+                  const absX = iframeRect.left + rect.left;
+                  const absY = iframeRect.top + rect.top;
+                  setSelection({
+                    text,
+                    x: absX,
+                    y: absY,
+                    width: rect.width,
+                    height: rect.height,
+                    sourceIframe: iframe,
+                  });
+                  return;
+                }
+              }
+            }
 
-            const range = sel.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            if (rect.width === 0 && rect.height === 0) return;
+            // No text selection — check if the click landed on a note underline
+            // by checking whether the click point is within any note's text range.
+            const clientX = "clientX" in e ? e.clientX : e.changedTouches[0].clientX;
+            const clientY = "clientY" in e ? e.clientY : e.changedTouches[0].clientY;
 
-            // Translate iframe-relative coords to parent-window coords
-            const iframeRect = iframe.getBoundingClientRect();
-            const absX = iframeRect.left + rect.left;
-            const absY = iframeRect.top + rect.top;
+            // Use caretRangeFromPoint to find what was clicked
+            const caretRange = iframeDoc.caretRangeFromPoint?.(clientX, clientY);
+            if (!caretRange) return;
 
-            setSelection({
-              text,
-              x: absX,
-              y: absY,
-              width: rect.width,
-              height: rect.height,
-              sourceIframe: iframe,
-            });
+            // Check all note CSS Highlight ranges to see if the caret is inside one
+            const currentNotes = notesRef.current;
+            for (const note of currentNotes) {
+              if (note.type !== "note") continue;
+              const colorKey = note.color ?? "yellow";
+              const groupName = `wcp-notes-${colorKey}`;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const highlightGroup = (iframeWin as any).CSS?.highlights?.get(groupName);
+              if (!highlightGroup) continue;
+
+              // Iterate over ranges in this highlight group
+              for (const range of highlightGroup) {
+                try {
+                  // Check if the caret position is within this range
+                  const startCmp = caretRange.compareBoundaryPoints(Range.START_TO_START, range);
+                  const endCmp = caretRange.compareBoundaryPoints(Range.END_TO_END, range);
+                  if (startCmp >= 0 && endCmp <= 0) {
+                    // Click is inside this note's range
+                    const iframeRect = iframe.getBoundingClientRect();
+                    const absX = iframeRect.left + clientX;
+                    const absY = iframeRect.top + clientY;
+                    setNotePopover({ note, anchorX: absX, anchorY: absY });
+                    return;
+                  }
+                } catch {
+                  // Range comparison may throw if ranges are in different documents
+                }
+              }
+            }
           }, 50);
         };
 
@@ -181,8 +286,8 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
           }
         };
 
-        iframeDoc.addEventListener("mouseup", handlePointerUp);
-        iframeDoc.addEventListener("touchend", handlePointerUp);
+        iframeDoc.addEventListener("mouseup", handlePointerUp as EventListener);
+        iframeDoc.addEventListener("touchend", handlePointerUp as EventListener);
         iframeDoc.addEventListener("mousedown", handlePointerDown);
 
         injectedIframes.current.add(iframe);
@@ -202,25 +307,37 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
     scanForIframes();
     const interval = setInterval(scanForIframes, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [injectNoteStyles]);
+
+  // Re-inject note styles when iframes reload (e.g. page turn)
+  // We do this by clearing the injected set when the URL changes
+  useEffect(() => {
+    injectedIframes.current.clear();
+  }, [publicationId]);
 
   // ── Apply decorations (highlights) to the iframe ─────────────────────────
-  // The CSS Custom Highlights API (used by the R2 navigator's experimentalLayout)
-  // applies a SINGLE colour per highlight group via a single ::highlight() CSS rule.
-  // To support per-annotation colours, we use one decoration group per colour.
+  // Highlights: one group per colour, tint = background colour
+  // Notes: one group per colour, tint = underline colour (CSS overrides background)
   const applyDecorations = useCallback(() => {
     const cframes = getCframes?.();
     if (!cframes || cframes.length === 0) return;
 
-    const annotated = [...highlights, ...notes];
-
-    // Group annotations by colour
-    const byColor: Record<string, typeof annotated> = {};
-    for (const annotation of annotated) {
+    // Group highlights by colour
+    const highlightsByColor: Record<string, typeof highlights> = {};
+    for (const annotation of highlights) {
       if (!annotation.locator?.text?.highlight) continue;
       const colorKey = annotation.color ?? "yellow";
-      if (!byColor[colorKey]) byColor[colorKey] = [];
-      byColor[colorKey].push(annotation);
+      if (!highlightsByColor[colorKey]) highlightsByColor[colorKey] = [];
+      highlightsByColor[colorKey].push(annotation);
+    }
+
+    // Group notes by colour (separate groups from highlights)
+    const notesByColor: Record<string, typeof notes> = {};
+    for (const annotation of notes) {
+      if (!annotation.locator?.text?.highlight) continue;
+      const colorKey = annotation.color ?? "yellow";
+      if (!notesByColor[colorKey]) notesByColor[colorKey] = [];
+      notesByColor[colorKey].push(annotation);
     }
 
     for (const cframe of cframes) {
@@ -228,15 +345,22 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
       const msg = (cframe as any)?.msg;
       if (!msg) continue;
 
-      // Clear all per-colour groups
+      // Clear all highlight groups
       for (const colorKey of Object.keys(HIGHLIGHT_COLORS)) {
         try {
           msg.send("decorate", { group: `wcp-annotations-${colorKey}`, action: "clear" }, () => {});
         } catch { /* ignore */ }
       }
 
-      // Add each annotation to its colour-specific group
-      for (const [colorKey, annotations] of Object.entries(byColor)) {
+      // Clear all note groups
+      for (const colorKey of Object.keys(HIGHLIGHT_COLORS)) {
+        try {
+          msg.send("decorate", { group: `${NOTE_GROUP_PREFIX}-${colorKey}`, action: "clear" }, () => {});
+        } catch { /* ignore */ }
+      }
+
+      // Add highlights (coloured background)
+      for (const [colorKey, annotations] of Object.entries(highlightsByColor)) {
         const tint = HIGHLIGHT_COLORS[colorKey as HighlightColor] ?? "#FFE066";
         for (const annotation of annotations) {
           try {
@@ -256,8 +380,36 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
           } catch { /* ignore */ }
         }
       }
+
+      // Add notes (underline — tint is used as underline colour via injected CSS)
+      for (const [colorKey, annotations] of Object.entries(notesByColor)) {
+        const tint = HIGHLIGHT_COLORS[colorKey as HighlightColor] ?? "#FFE066";
+        for (const annotation of annotations) {
+          try {
+            msg.send(
+              "decorate",
+              {
+                group: `${NOTE_GROUP_PREFIX}-${colorKey}`,
+                action: "add",
+                decoration: {
+                  id: annotation.id,
+                  locator: annotation.locator,
+                  // tint is still passed so the navigator registers the range;
+                  // the injected CSS overrides background-color → transparent + underline
+                  style: { tint },
+                },
+              },
+              () => {}
+            );
+          } catch { /* ignore */ }
+        }
+      }
     }
-  }, [getCframes, highlights, notes]);
+
+    // Re-inject note styles into all current iframes (in case they reloaded)
+    document.querySelectorAll<HTMLIFrameElement>("iframe.readium-navigator-iframe")
+      .forEach(injectNoteStyles);
+  }, [getCframes, highlights, notes, injectNoteStyles]);
 
   // Re-apply decorations whenever the annotation list changes
   useEffect(() => {
@@ -284,8 +436,6 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         text: { highlight: selection.text },
       };
 
-      // Clear the iframe selection BEFORE saving so the highlight colour
-      // is immediately visible (otherwise the blue browser selection overlays it).
       clearIframeSelection(selection.sourceIframe);
       setSelection(null);
 
@@ -299,15 +449,27 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
   // ── Handle note action ────────────────────────────────────────────────────
   const handleOpenNote = useCallback(() => {
     setPendingSelection(selection);
+    setEditingNote(null);
     setIsNoteEditorOpen(true);
     setSelection(null);
   }, [selection]);
 
   const handleSaveNote = useCallback(
     async (noteText: string, color: HighlightColor) => {
-      if (!pendingSelection) return;
       const loc = currentLocator?.();
       if (!loc) return;
+
+      if (editingNote) {
+        // Updating an existing note
+        await updateAnnotation(editingNote.id, { note: noteText, color });
+        setIsNoteEditorOpen(false);
+        setEditingNote(null);
+        showToast("Note updated ✓");
+        setTimeout(applyDecorations, 200);
+        return;
+      }
+
+      if (!pendingSelection) return;
 
       const annotationLocator: Locator = {
         href: loc.href,
@@ -321,7 +483,6 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         text: { highlight: pendingSelection.text },
       };
 
-      // Clear the iframe selection so the highlight colour is visible immediately
       clearIframeSelection(pendingSelection.sourceIframe);
 
       await addAnnotation({
@@ -335,8 +496,15 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
       showToast("Note saved ✓");
       setTimeout(applyDecorations, 200);
     },
-    [pendingSelection, currentLocator, addAnnotation, applyDecorations, clearIframeSelection, showToast]
+    [pendingSelection, editingNote, currentLocator, addAnnotation, updateAnnotation, applyDecorations, clearIframeSelection, showToast]
   );
+
+  // ── Handle note popover edit ──────────────────────────────────────────────
+  const handleEditNote = useCallback((note: Annotation) => {
+    setEditingNote(note);
+    setPendingSelection(null);
+    setIsNoteEditorOpen(true);
+  }, []);
 
   // ── Total annotation count for badge ─────────────────────────────────────
   const total = highlights.length + notes.length;
@@ -434,16 +602,41 @@ export const AnnotationsTrigger = ({ variant }: StatefulActionTriggerProps) => {
         onDismiss={dismissSelection}
       />
 
-      {/* Note editor modal */}
+      {/* Note editor modal — for creating new notes or editing existing ones */}
       <NoteEditor
         isOpen={isNoteEditorOpen}
-        selectedText={pendingSelection?.text ?? ""}
+        selectedText={editingNote?.locator?.text?.highlight ?? pendingSelection?.text ?? ""}
+        existingNote={editingNote}
         onSave={handleSaveNote}
+        onDelete={editingNote ? () => {
+          deleteAnnotation(editingNote.id);
+          setIsNoteEditorOpen(false);
+          setEditingNote(null);
+          showToast("Note deleted");
+          setTimeout(applyDecorations, 200);
+        } : undefined}
         onClose={() => {
           setIsNoteEditorOpen(false);
           setPendingSelection(null);
+          setEditingNote(null);
         }}
       />
+
+      {/* Note popover — shown when user clicks an underlined note */}
+      {notePopover && (
+        <NotePopover
+          note={notePopover.note}
+          anchorX={notePopover.anchorX}
+          anchorY={notePopover.anchorY}
+          onEdit={handleEditNote}
+          onDelete={(id) => {
+            deleteAnnotation(id);
+            showToast("Note deleted");
+            setTimeout(applyDecorations, 200);
+          }}
+          onClose={() => setNotePopover(null)}
+        />
+      )}
 
       {/* Toast notification — brief confirmation after highlight / note */}
       {toast.visible && (

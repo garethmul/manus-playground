@@ -5,5 +5,6 @@ export { BookmarkButton } from "./BookmarkButton";
 export { AnnotationsPanel } from "./AnnotationsPanel";
 export { SelectionToolbar } from "./SelectionToolbar";
 export { NoteEditor } from "./NoteEditor";
+export { NotePopover } from "./NotePopover";
 export { useAnnotations, HIGHLIGHT_COLORS } from "./useAnnotations";
 export type { Annotation, AnnotationType, HighlightColor, Locator } from "./useAnnotations";
